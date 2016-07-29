@@ -39,6 +39,16 @@ describe "Backburner::Worker module" do
       end
     end # queue named priority
 
+    it "should support enqueuing job with lambda as priority" do
+      Backburner::Worker.enqueue TestJob, [3, 4], :ttr => 100, :pri => lambda { |job_class, args| job_class == TestJob && args == [3,4] ? 777 : 666 }
+      pop_one_job do |job, body|
+        assert_equal "TestJob", body["class"]
+        assert_equal [3, 4], body["args"]
+        assert_equal 100, job.ttr
+        assert_equal 777, job.pri
+      end
+    end # queue lambda priority
+
     it "should support enqueuing job with class queue respond_timeout" do
       Backburner::Worker.enqueue TestJob, [3, 4]
       pop_one_job do |job, body|
@@ -48,6 +58,16 @@ describe "Backburner::Worker module" do
         assert_equal 100, job.pri
       end
     end # queue respond_timeout
+
+    it "should support enqueuing job with lambda as respond_timeout" do
+      Backburner::Worker.enqueue TestJob, [3, 4], :ttr => lambda { |job_class, args| job_class == TestJob && args == [3,4] ? 777 : 666 }, :pri => 1
+      pop_one_job do |job, body|
+        assert_equal "TestJob", body["class"]
+        assert_equal [3, 4], body["args"]
+        assert_equal 777, job.ttr
+        assert_equal 1, job.pri
+      end
+    end # queue lambda priority
 
     it "should support enqueuing job with custom queue" do
       Backburner::Worker.enqueue TestJob, [6, 7], :queue => "test.bar", :pri => 5000

@@ -73,6 +73,14 @@ describe "Backburner::Performable module" do
       AutomagicTestObj.new.qux?
     end
 
+    it "should handle lambdas for priority" do
+      proc = lambda { |job_class, args| 5 }
+      Backburner::Performable.handle_asynchronously(AutomagicTestObj, :qux, :pri => proc, :queue => "qux")
+
+      Backburner::Worker.expects(:enqueue).with(AutomagicTestObj, [56, :qux_without_async, true, false], has_entries(:pri => proc, :queue => "qux"))
+      AutomagicTestObj.new.qux(true, false)
+    end
+
     it "should be available for instance methods on any class that includes the Performable module" do
       AsyncInstanceMethodsTestObj.handle_asynchronously :foo, pri: 5000, queue: 'qux'
       Backburner::Worker.expects(:enqueue).with(AsyncInstanceMethodsTestObj, [56, :foo_without_async, true, false], has_entries(:pri => 5000, :queue => "qux"))
