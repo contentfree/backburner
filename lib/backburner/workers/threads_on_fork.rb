@@ -207,7 +207,11 @@ module Backburner
       def run_while_can(conn = connection)
         while @garbage_after.nil? or @garbage_after > @runs
           @runs += 1 # FIXME: Likely race condition
-          work_one_job(conn)
+          begin
+            work_one_job(conn)
+          rescue => e
+            log_error(exception_message(e))
+          end
         end
       end
 
