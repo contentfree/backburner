@@ -102,7 +102,7 @@ module Backburner
       [prefix.gsub(/\.$/, ''), dasherize(queue_name).gsub(/^#{prefix}/, '')].join(separator).gsub(/#{Regexp::escape(separator)}+/, separator).split(':').first
     end
 
-    # Resolves job priority based on the value given. Can be integer, a class or nothing
+    # Resolves job priority based on the value given. Can be integer, a class, a lambda or nothing
     #
     # @example
     #  resolve_priority(1000) => 1000
@@ -111,9 +111,12 @@ module Backburner
     #
     def resolve_priority(pri)
       if pri.respond_to?(:queue_priority)
-        resolve_priority(pri.queue_priority)
+        queue_priority = pri.queue_priority
+        resolve_priority(queue_priority.is_a?(Proc) ? queue_priority.call : queue_priority)
       elsif pri.is_a?(String) || pri.is_a?(Symbol) # named priority
         resolve_priority(Backburner.configuration.priority_labels[pri.to_sym])
+      elsif pri.is_a?(Proc)
+        resolve_priority(pri.call)
       elsif pri.is_a?(Fixnum) # numerical
         pri
       else # default
@@ -130,7 +133,10 @@ module Backburner
     #
     def resolve_respond_timeout(ttr)
       if ttr.respond_to?(:queue_respond_timeout)
-        resolve_respond_timeout(ttr.queue_respond_timeout)
+        queue_respond_timeout = ttr.queue_respond_timeout
+        resolve_respond_timeout(queue_respond_timeout.is_a?(Proc) ? queue_respond_timeout.call : queue_respond_timeout)
+      elsif ttr.is_a?(Proc)
+        resolve_respond_timeout(ttr.call)
       elsif ttr.is_a?(Fixnum) # numerical
         ttr
       else # default

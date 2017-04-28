@@ -24,9 +24,14 @@ module Backburner
     #   Backburner::Worker.enqueue NewsletterSender, [self.id, user.id], :ttr => 1000
     #
     def self.enqueue(job_class, args=[], opts={})
-      pri   = resolve_priority(opts[:pri] || job_class)
+      pri   = opts[:pri] && (Proc === opts[:pri] ? opts[:pri].call(job_class, args) : opts[:pri])
+      pri   = resolve_priority(pri || job_class)
+
       delay = [0, opts[:delay].to_i].max
-      ttr   = resolve_respond_timeout(opts[:ttr] || job_class)
+
+      ttr   = opts[:ttr] && (Proc === opts[:ttr] ? opts[:ttr].call(job_class, args) : opts[:ttr])
+      ttr   = resolve_respond_timeout(ttr || job_class)
+
       res   = Backburner::Hooks.invoke_hook_events(job_class, :before_enqueue, *args)
 
       return nil unless res # stop if hook is false
@@ -153,7 +158,7 @@ module Backburner
       retry_status = "failed: attempt #{num_retries+1} of #{queue_config.max_job_retries+1}"
       if num_retries < queue_config.max_job_retries # retry again
         delay = queue_config.retry_delay_proc.call(queue_config.retry_delay, num_retries) rescue queue_config.retry_delay
-        job.retry(num_retries + 1, delay)
+        job.retry(num_retries + 1, delay)  # FIXME: If we're very close to the job-release time then this can fail (with a NOT_FOUND for the reservation)
         self.log_job_end(job.name, "#{retry_status}, retrying in #{delay}s") if job_started_at
       else # retries failed, bury
         job.bury

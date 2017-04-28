@@ -139,9 +139,19 @@ describe "Backburner::Helpers module" do
       assert_equal 1000, resolve_priority(job)
     end
 
+    it "supports classes which return lambdas from queue_priority" do
+      job = stub(:queue_priority => lambda { 5 })
+      assert_equal 5, resolve_priority(job)
+    end
+
     it "supports classes which don't respond to queue_priority" do
       job = stub(:fake => true)
       assert_equal 1000, resolve_priority(job)
+    end
+
+    it "supports lambdas directly" do
+      pri = lambda { 5 }
+      assert_equal 5, resolve_priority(pri)
     end
 
     it "supports default pri for null values" do
@@ -170,6 +180,11 @@ describe "Backburner::Helpers module" do
       assert_equal 300, resolve_respond_timeout(job)
     end
 
+    it "supports classes which return lambdas from queue_respond_timeout" do
+      job = stub(:queue_respond_timeout => lambda { 5 })
+      assert_equal 5, resolve_respond_timeout(job)
+    end
+
     it "supports classes which don't respond to queue_respond_timeout" do
       job = stub(:fake => true)
       assert_equal 300, resolve_respond_timeout(job)
@@ -177,6 +192,11 @@ describe "Backburner::Helpers module" do
 
     it "supports default ttr for null values" do
       assert_equal 300, resolve_respond_timeout(nil)
+    end
+
+    it "supports lambdas directly" do
+      ttr = lambda { 5 }
+      assert_equal 5, resolve_respond_timeout(ttr)
     end
   end # resolve_respond_timeout
 end

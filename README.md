@@ -185,6 +185,8 @@ class NewsletterJob
 end
 ```
 
+Additionally, both `queue_priority` and `queue_respond_timeout` may be lambdas (with no arguments).
+
 Jobs can be enqueued with:
 
 ```ruby
@@ -240,8 +242,16 @@ _performable_ object's class as an argument:
 
 ```ruby
 # Given the User class above
-User.async(:queue => lambda { |user_klass| ["queue1","queue2"].sample(1).first }).do_hard_work # would add the job to either queue1 or queue2 randomly
+User.async(:queue => lambda { |user_class| ["queue1","queue2"].sample(1).first }).do_hard_work # would add the job to either queue1 or queue2 randomly
 ```
+
+If a lambda is given for `ttr` or `pri`, then it will be called and given
+the _performable_ object's class as an argument as well as the arguments for
+the job:
+
+```ruby
+# Given the User class above
+User.async(:queue => 'work', pri: lambda { |user_class, args| User.find(args.first).admin? ? 1 : 100 }).do_hard_work # would add the job with high priority if the user was an admin
 
 ### Using Async Asynchronously ###
 
